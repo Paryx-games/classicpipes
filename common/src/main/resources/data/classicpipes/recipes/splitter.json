@@ -9,11 +9,7 @@
       "item": "minecraft:stick"
     }
   },
-  "pattern": [
-    "II",
-    "IS",
-    " S"
-  ],
+  "pattern": [ " I", "I ", " S" ],
   "result": {
     "count": 1,
     "item": "classicpipes:splitter"
