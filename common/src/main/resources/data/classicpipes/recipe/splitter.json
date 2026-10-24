@@ -5,11 +5,7 @@
     "I": "minecraft:iron_ingot",
     "S": "minecraft:stick"
   },
-  "pattern": [
-    "II",
-    "IS",
-    " S"
-  ],
+  "pattern": [ " I", "I ", " S" ],
   "result": {
     "count": 1,
     "id": "classicpipes:splitter"
