@@ -93,7 +93,7 @@ public final class DiscordRequestNotifier {
 
         if (appendToRecentMessage) {
             RECENT_COMPONENTS.add(component);
-            if (send(webhookUrl + "/messages/" + messageId, "PATCH", payload(), messageId) == null) {
+            if (send(webhookUrl + "/messages/" + messageId + "?with_components=true", "PATCH", payload(), messageId) == null) {
                 RECENT_COMPONENTS.remove(RECENT_COMPONENTS.size() - 1);
             } else {
                 lastNotificationTime = now;
@@ -103,7 +103,7 @@ public final class DiscordRequestNotifier {
 
         RECENT_COMPONENTS.clear();
         RECENT_COMPONENTS.add(component);
-        String createdMessageId = send(webhookUrl + "?wait=true", "POST", payload(), null);
+        String createdMessageId = send(webhookUrl + "?wait=true&with_components=true", "POST", payload(), null);
         if (createdMessageId != null) {
             messageId = createdMessageId;
             lastNotificationTime = now;
