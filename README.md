@@ -8,6 +8,19 @@ https://youtu.be/nxhCllIh-sc
 
 For information about getting started with this mod, see the above video tutorial or check out [The Classic Pipes Wiki](https://github.com/J4gm/classicpipes/wiki).
 
+## DISCORD REQUEST NOTIFICATIONS
+
+To send server-side request notifications to Discord, edit
+`config/classicpipes.toml` in the server directory and set `webhook_url` to a
+Discord webhook URL. The file is created automatically after the first request
+if it does not exist. The webhook must allow messages with Components v2.
+
+Player requests made within 60 seconds are grouped by editing the previous
+webhook message. A request after that window starts a new message. Notifications
+include the player, requested amount, item, and request time; they do not include
+the network's total item count. The webhook URL is read only by the server and is
+never sent to clients.
+
 ## SPECIAL THANKS
 
 * Buildcraft: SpaceToad and team

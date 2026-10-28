@@ -262,6 +262,7 @@ public class PipeNetwork {
                 player.awardStat(ClassicPipes.ITEMS_REQUESTED_STAT, stack.getCount());
                 ClassicPipes.REQUEST_ITEM_TRIGGER.trigger((ServerPlayer) player, stack, requestState.getUniqueCrafts());
                 player.sendSystemMessage(Component.translatable("chat." + ClassicPipes.MOD_ID + ".requested", stack.getCount(), stack.getItemName()).withStyle(ChatFormatting.GREEN));
+                DiscordRequestNotifier.notifyRequest(player, stack);
             }
         }
     }
