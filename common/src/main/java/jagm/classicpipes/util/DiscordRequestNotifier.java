@@ -94,9 +94,7 @@ public final class DiscordRequestNotifier {
         if (appendToRecentMessage) {
             RECENT_COMPONENTS.add(component);
             if (send(webhookUrl + "/messages/" + messageId, "PATCH", payload(), messageId) == null) {
-                if (messageId != null) {
-                    RECENT_COMPONENTS.remove(RECENT_COMPONENTS.size() - 1);
-                }
+                RECENT_COMPONENTS.remove(RECENT_COMPONENTS.size() - 1);
             } else {
                 lastNotificationTime = now;
             }
@@ -123,6 +121,7 @@ public final class DiscordRequestNotifier {
             }
             components.append(RECENT_COMPONENTS.get(i));
         }
+        components.append(']');
         return "{\"flags\":32768,\"components\":" + components + "}";
     }
 
