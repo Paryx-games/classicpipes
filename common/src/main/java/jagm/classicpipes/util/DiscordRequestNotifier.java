@@ -1,5 +1,7 @@
 package jagm.classicpipes.util;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import jagm.classicpipes.ClassicPipes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -33,10 +35,12 @@ public final class DiscordRequestNotifier {
         thread.setDaemon(true);
         return thread;
     });
-    private static final List<String> RECENT_COMPONENTS = new ArrayList<>();
+    private static final List<String> RECENT_REQUEST_LINES = new ArrayList<>();
 
     private static String messageId;
+    private static String recentPlayerName;
     private static long lastNotificationTime;
+    private static long recentTimestamp;
 
     private DiscordRequestNotifier() {
     }
@@ -88,49 +92,85 @@ public final class DiscordRequestNotifier {
 
     private static void sendRequest(String webhookUrl, String playerName, ItemStack stack) {
         long now = System.currentTimeMillis();
-        boolean appendToRecentMessage = messageId != null && now - lastNotificationTime < GROUPING_WINDOW_MILLIS;
-        String component = componentJson(playerName, stack, now / 1000L);
+        boolean appendToRecentMessage = messageId != null
+                && playerName.equals(recentPlayerName)
+                && now - lastNotificationTime < GROUPING_WINDOW_MILLIS;
+        String requestLine = requestLine(stack);
 
         if (appendToRecentMessage) {
-            RECENT_COMPONENTS.add(component);
+            RECENT_REQUEST_LINES.add(requestLine);
+            recentTimestamp = now / 1000L;
             if (send(webhookUrl + "/messages/" + messageId + "?with_components=true", "PATCH", payload(), messageId) == null) {
-                RECENT_COMPONENTS.remove(RECENT_COMPONENTS.size() - 1);
+                RECENT_REQUEST_LINES.remove(RECENT_REQUEST_LINES.size() - 1);
             } else {
                 lastNotificationTime = now;
             }
             return;
         }
 
-        RECENT_COMPONENTS.clear();
-        RECENT_COMPONENTS.add(component);
+        RECENT_REQUEST_LINES.clear();
+        RECENT_REQUEST_LINES.add(requestLine);
+        recentPlayerName = playerName;
+        recentTimestamp = now / 1000L;
         String createdMessageId = send(webhookUrl + "?wait=true&with_components=true", "POST", payload(), null);
         if (createdMessageId != null) {
             messageId = createdMessageId;
             lastNotificationTime = now;
         } else {
-            RECENT_COMPONENTS.clear();
+            RECENT_REQUEST_LINES.clear();
             messageId = null;
+            recentPlayerName = null;
         }
     }
 
     private static String payload() {
-        StringBuilder components = new StringBuilder("[");
-        for (int i = 0; i < RECENT_COMPONENTS.size(); i++) {
-            if (i > 0) {
-                components.append(',');
-            }
-            components.append(RECENT_COMPONENTS.get(i));
+        StringBuilder content = new StringBuilder("# ").append(recentPlayerName);
+        for (String requestLine : RECENT_REQUEST_LINES) {
+            content.append('\n').append(requestLine);
         }
-        components.append(']');
-        return "{\"flags\":32768,\"components\":" + components + "}";
+        content.append("\n-# <t:").append(recentTimestamp).append(":f>");
+        return payload(content.toString());
     }
 
-    private static String componentJson(String playerName, ItemStack stack, long timestamp) {
-        String content = "# " + playerName
-                + "\\nRequested **x" + stack.getCount() + "** of " + stack.getItemName().getString()
-                + "\\n-# <t:" + timestamp + ":f>";
-        return "{\"type\":17,\"accent_color\":16711680,\"components\":[{\"type\":10,\"content\":\""
-                + escapeJson(content) + "\"}]}";
+    private static String payload(String content) {
+        JsonObject textDisplay = new JsonObject();
+        textDisplay.addProperty("type", 10);
+        textDisplay.addProperty("content", content);
+
+        JsonArray sectionComponents = new JsonArray();
+        sectionComponents.add(textDisplay);
+
+        JsonObject thumbnail = new JsonObject();
+        thumbnail.addProperty("type", 11);
+        JsonObject media = new JsonObject();
+        media.addProperty("url", "https://mc-heads.net/avatar/" + recentPlayerName + "/128");
+        thumbnail.add("media", media);
+
+        JsonObject section = new JsonObject();
+        section.addProperty("type", 9);
+        section.add("components", sectionComponents);
+        section.add("accessory", thumbnail);
+
+        JsonArray containerComponents = new JsonArray();
+        containerComponents.add(section);
+
+        JsonObject container = new JsonObject();
+        container.addProperty("type", 17);
+        container.addProperty("accent_color", 9550540);
+        container.add("components", containerComponents);
+
+        JsonArray components = new JsonArray();
+        components.add(container);
+
+        JsonObject payload = new JsonObject();
+        payload.addProperty("flags", 32768);
+        payload.add("components", components);
+        return payload.toString();
+    }
+
+    private static String requestLine(ItemStack stack) {
+        return "Requested **x" + stack.getCount() + "** of "
+                + stack.getItemName().getString();
     }
 
     private static String send(String url, String method, String payload, String editedMessageId) {
@@ -146,7 +186,8 @@ public final class DiscordRequestNotifier {
                         method, response.statusCode(), response.body());
                 if (editedMessageId != null) {
                     messageId = null;
-                    RECENT_COMPONENTS.clear();
+                    RECENT_REQUEST_LINES.clear();
+                    recentPlayerName = null;
                 }
                 return null;
             }
@@ -169,10 +210,4 @@ public final class DiscordRequestNotifier {
         }
     }
 
-    private static String escapeJson(String value) {
-        return value.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r");
-    }
 }
