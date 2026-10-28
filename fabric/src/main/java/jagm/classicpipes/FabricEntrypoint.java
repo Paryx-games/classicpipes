@@ -3,11 +3,13 @@ package jagm.classicpipes;
 import jagm.classicpipes.blockentity.FabricFluidPipeWrapper;
 import jagm.classicpipes.blockentity.FabricItemPipeWrapper;
 import jagm.classicpipes.network.*;
+import jagm.classicpipes.util.DiscordRequestNotifier;
 import jagm.classicpipes.util.MiscUtil;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
@@ -28,6 +30,7 @@ public class FabricEntrypoint implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> DiscordRequestNotifier.ensureConfig());
 
         ClassicPipes.ITEMS.forEach((name, item) -> Registry.register(BuiltInRegistries.ITEM, MiscUtil.identifier(name), item));
         ClassicPipes.BLOCKS.forEach((name, block) -> Registry.register(BuiltInRegistries.BLOCK, MiscUtil.identifier(name), block));

@@ -12,7 +12,7 @@ For information about getting started with this mod, see the above video tutoria
 
 To send server-side request notifications to Discord, edit
 `config/classicpipes.toml` in the server directory and set `webhook_url` to a
-Discord webhook URL. The file is created automatically after the first request
+Discord webhook URL. The file is created automatically when the server starts
 if it does not exist. The webhook must allow messages with Components v2.
 
 Player requests made within 60 seconds are grouped by editing the previous

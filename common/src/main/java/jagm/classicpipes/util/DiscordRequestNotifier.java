@@ -50,6 +50,10 @@ public final class DiscordRequestNotifier {
         EXECUTOR.execute(() -> sendRequest(webhookUrl, player.getPlainTextName(), stack));
     }
 
+    public static void ensureConfig() {
+        loadWebhookUrl();
+    }
+
     private static String loadWebhookUrl() {
         try {
             if (Files.notExists(CONFIG_PATH)) {
