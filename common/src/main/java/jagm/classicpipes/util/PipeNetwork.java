@@ -54,14 +54,18 @@ public class PipeNetwork {
         this(pos, SortingMode.AMOUNT_DESCENDING);
     }
 
-    private Tuple<Integer, Boolean> amountCraftable(ItemStack stack, int requiredAmount, BlockPos requestPos, RequestState requestState, List<ItemStack> itemsInThisBranch, boolean matchComponents) {
+    private Tuple<Integer, Boolean> amountCraftable(ItemStack stack, int requiredAmount, BlockPos requestPos,
+            RequestState requestState, List<ItemStack> itemsInThisBranch, boolean matchComponents) {
         int amount = 0;
         boolean hasRecipe = false;
         int missingStacksSize = requestState.missingStacksSize();
         boolean isLabel = stack.getItem() instanceof LabelItem;
         for (RecipePipeEntity recipePipe : this.recipePipes) {
             ItemStack resultStack = recipePipe.getResult();
-            if (!isLabel && (matchComponents ? ItemStack.isSameItemSameComponents(resultStack, stack) : ItemStack.isSameItem(resultStack, stack)) || isLabel && ((LabelItem)stack.getItem()).itemMatches(stack, resultStack)) {
+            if (!isLabel
+                    && (matchComponents ? ItemStack.isSameItemSameComponents(resultStack, stack)
+                            : ItemStack.isSameItem(resultStack, stack))
+                    || isLabel && ((LabelItem) stack.getItem()).itemMatches(stack, resultStack)) {
                 hasRecipe = true;
                 requestState.reduceMissingStacks(missingStacksSize);
                 List<ItemStack> ingredients = recipePipe.getIngredientsCollated();
@@ -71,7 +75,8 @@ public class PipeNetwork {
                     for (ItemStack branchStack : itemsInThisBranch) {
                         if (ItemStack.isSameItemSameComponents(branchStack, ingredientStack)) {
                             missingStacksSize = requestState.missingStacksSize();
-                            requestState.addMissingStack(ingredientStack.copyWithCount(ingredientStack.getCount() * requiredCrafts));
+                            requestState.addMissingStack(
+                                    ingredientStack.copyWithCount(ingredientStack.getCount() * requiredCrafts));
                             loopFound = true;
                             break;
                         }
@@ -87,7 +92,9 @@ public class PipeNetwork {
                         newBranchItems.add(ingredientStack);
                         RequestState backupState = requestState.copy();
                         int requiredIngredientAmount = ingredientStack.getCount() * requiredCrafts;
-                        int ingredientAmount = this.availableAmount(ingredientStack.copyWithCount(requiredIngredientAmount), recipePipe.getBlockPos(), requestState, newBranchItems, true);
+                        int ingredientAmount = this.availableAmount(
+                                ingredientStack.copyWithCount(requiredIngredientAmount), recipePipe.getBlockPos(),
+                                requestState, newBranchItems, true);
                         possibleCrafts = Math.min(possibleCrafts, ingredientAmount / ingredientStack.getCount());
                         requestState.restore(backupState);
                     }
@@ -97,7 +104,8 @@ public class PipeNetwork {
                             List<ItemStack> newBranchItems = new ArrayList<>(itemsInThisBranch);
                             newBranchItems.add(ingredientStack);
                             int possibleIngredientAmount = ingredientStack.getCount() * possibleCrafts;
-                            this.availableAmount(ingredientStack.copyWithCount(possibleIngredientAmount), recipePipe.getBlockPos(), requestState, newBranchItems, true);
+                            this.availableAmount(ingredientStack.copyWithCount(possibleIngredientAmount),
+                                    recipePipe.getBlockPos(), requestState, newBranchItems, true);
                         }
                         requestState.reduceMissingStacks(missingStacksSize2);
                         int amountToDeliver = Math.min(resultStack.getCount() * possibleCrafts, requiredAmount);
@@ -119,12 +127,13 @@ public class PipeNetwork {
         return new Tuple<>(amount, hasRecipe);
     }
 
-    private int amountInNetwork(ItemStack stack, BlockPos requestPos, RequestState requestState, boolean matchComponents) {
+    private int amountInNetwork(ItemStack stack, BlockPos requestPos, RequestState requestState,
+            boolean matchComponents) {
         int amount = 0;
         boolean isLabel = stack.getItem() instanceof LabelItem;
         for (ItemStack spareStack : requestState.getSpareStacks()) {
             if (isLabel) {
-                if (((LabelItem)stack.getItem()).itemMatches(stack, spareStack)) {
+                if (((LabelItem) stack.getItem()).itemMatches(stack, spareStack)) {
                     int spareAmount = Math.min(spareStack.getCount(), stack.getCount());
                     if (spareAmount > 0) {
                         amount += spareAmount;
@@ -135,7 +144,8 @@ public class PipeNetwork {
                         break;
                     }
                 }
-            } else if (matchComponents ? ItemStack.isSameItemSameComponents(spareStack, stack) : ItemStack.isSameItem(spareStack, stack)) {
+            } else if (matchComponents ? ItemStack.isSameItemSameComponents(spareStack, stack)
+                    : ItemStack.isSameItem(spareStack, stack)) {
                 int spareAmount = Math.min(spareStack.getCount(), stack.getCount());
                 if (spareAmount > 0) {
                     amount += spareAmount;
@@ -152,22 +162,28 @@ public class PipeNetwork {
             for (ProviderPipe providerPipe : this.providerPipes) {
                 for (ItemStack cacheStack : providerPipe.getCache()) {
                     if (isLabel) {
-                        if (((LabelItem)stack.getItem()).itemMatches(stack, cacheStack)) {
-                            int amountProvidable = Math.min(stack.getCount() - amount, cacheStack.getCount() - requestState.amountAlreadyWithdrawing(providerPipe, cacheStack));
+                        if (((LabelItem) stack.getItem()).itemMatches(stack, cacheStack)) {
+                            int amountProvidable = Math.min(stack.getCount() - amount, cacheStack.getCount()
+                                    - requestState.amountAlreadyWithdrawing(providerPipe, cacheStack));
                             if (amountProvidable > 0) {
                                 amount += amountProvidable;
-                                requestState.scheduleItemWithdrawal(providerPipe, cacheStack.copyWithCount(amountProvidable));
-                                requestState.scheduleItemRouting(requestPos, cacheStack.copyWithCount(amountProvidable));
+                                requestState.scheduleItemWithdrawal(providerPipe,
+                                        cacheStack.copyWithCount(amountProvidable));
+                                requestState.scheduleItemRouting(requestPos,
+                                        cacheStack.copyWithCount(amountProvidable));
                             }
                             if (amount >= stack.getCount()) {
                                 break;
                             }
                         }
-                    } else if (matchComponents ? ItemStack.isSameItemSameComponents(cacheStack, stack) : ItemStack.isSameItem(cacheStack, stack)) {
-                        int amountProvidable = Math.min(stack.getCount() - amount, cacheStack.getCount() - requestState.amountAlreadyWithdrawing(providerPipe, cacheStack));
+                    } else if (matchComponents ? ItemStack.isSameItemSameComponents(cacheStack, stack)
+                            : ItemStack.isSameItem(cacheStack, stack)) {
+                        int amountProvidable = Math.min(stack.getCount() - amount, cacheStack.getCount()
+                                - requestState.amountAlreadyWithdrawing(providerPipe, cacheStack));
                         if (amountProvidable > 0) {
                             amount += amountProvidable;
-                            requestState.scheduleItemWithdrawal(providerPipe, cacheStack.copyWithCount(amountProvidable));
+                            requestState.scheduleItemWithdrawal(providerPipe,
+                                    cacheStack.copyWithCount(amountProvidable));
                             requestState.scheduleItemRouting(requestPos, cacheStack.copyWithCount(amountProvidable));
                         }
                         if (amount >= stack.getCount() || matchComponents) {
@@ -183,10 +199,12 @@ public class PipeNetwork {
         return amount;
     }
 
-    private int availableAmount(ItemStack stack, BlockPos requestPos, RequestState requestState, List<ItemStack> itemsInThisBranch, boolean matchComponents) {
+    private int availableAmount(ItemStack stack, BlockPos requestPos, RequestState requestState,
+            List<ItemStack> itemsInThisBranch, boolean matchComponents) {
         int amount = this.amountInNetwork(stack, requestPos, requestState, matchComponents);
         if (amount < stack.getCount()) {
-            Tuple<Integer, Boolean> tuple = this.amountCraftable(stack, stack.getCount() - amount, requestPos, requestState, itemsInThisBranch, matchComponents);
+            Tuple<Integer, Boolean> tuple = this.amountCraftable(stack, stack.getCount() - amount, requestPos,
+                    requestState, itemsInThisBranch, matchComponents);
             amount += tuple.a();
             if (!tuple.b()) {
                 requestState.addMissingStack(stack.copyWithCount(stack.getCount() - amount));
@@ -195,32 +213,48 @@ public class PipeNetwork {
         return amount;
     }
 
-    public void request(ServerLevel level, ItemStack stack, BlockPos requestPos, Player player, boolean partialRequests, boolean matchComponents) {
+    public void request(ServerLevel level, ItemStack stack, BlockPos requestPos, Player player, boolean partialRequests,
+            boolean matchComponents) {
         RequestState requestState = new RequestState();
         int amount = this.availableAmount(stack, requestPos, requestState, new ArrayList<>(), matchComponents);
         if (amount < stack.getCount()) {
             if (partialRequests) {
                 this.request(level, stack.copyWithCount(amount), requestPos, player, false, matchComponents);
             } else if (player != null) {
-                player.sendSystemMessage(Component.translatable("chat." + ClassicPipes.MOD_ID + ".missing_item.a", stack.getCount(), stack.getItemName()).withStyle(ChatFormatting.RED));
+                player.sendSystemMessage(Component.translatable("chat." + ClassicPipes.MOD_ID + ".missing_item.a",
+                        stack.getCount(), stack.getItemName()).withStyle(ChatFormatting.RED));
                 for (ItemStack missingStack : requestState.collateMissingStacks()) {
                     if (missingStack.getItem() instanceof TagLabelItem) {
                         String label = missingStack.get(ClassicPipes.LABEL_COMPONENT);
                         if (label != null) {
-                            MutableComponent tagTranslation = Component.translatableWithFallback(TagLabelItem.labelToTranslationKey(label), "");
+                            MutableComponent tagTranslation = Component
+                                    .translatableWithFallback(TagLabelItem.labelToTranslationKey(label), "");
                             if (!tagTranslation.getString().isEmpty()) {
-                                player.sendSystemMessage(Component.translatable("chat." + ClassicPipes.MOD_ID + ".missing_item.translated_tag", missingStack.getCount(), "#" + label, tagTranslation).withStyle(ChatFormatting.YELLOW));
+                                player.sendSystemMessage(Component
+                                        .translatable("chat." + ClassicPipes.MOD_ID + ".missing_item.translated_tag",
+                                                missingStack.getCount(), "#" + label, tagTranslation)
+                                        .withStyle(ChatFormatting.YELLOW));
                             } else {
-                                player.sendSystemMessage(Component.translatable("chat." + ClassicPipes.MOD_ID + ".missing_item.b", missingStack.getCount(), "#" + label).withStyle(ChatFormatting.YELLOW));
+                                player.sendSystemMessage(
+                                        Component
+                                                .translatable("chat." + ClassicPipes.MOD_ID + ".missing_item.b",
+                                                        missingStack.getCount(), "#" + label)
+                                                .withStyle(ChatFormatting.YELLOW));
                             }
                         }
                     } else if (missingStack.getItem() instanceof ModLabelItem) {
                         String label = missingStack.get(ClassicPipes.LABEL_COMPONENT);
                         if (label != null) {
-                            player.sendSystemMessage(Component.translatable("chat." + ClassicPipes.MOD_ID + ".missing_item.mod", missingStack.getCount(), Services.LOADER_SERVICE.getModName(label)).withStyle(ChatFormatting.YELLOW));
+                            player.sendSystemMessage(Component
+                                    .translatable("chat." + ClassicPipes.MOD_ID + ".missing_item.mod",
+                                            missingStack.getCount(), Services.LOADER_SERVICE.getModName(label))
+                                    .withStyle(ChatFormatting.YELLOW));
                         }
                     } else {
-                        player.sendSystemMessage(Component.translatable("chat." + ClassicPipes.MOD_ID + ".missing_item.b", missingStack.getCount(), missingStack.getItemName()).withStyle(ChatFormatting.YELLOW));
+                        player.sendSystemMessage(Component
+                                .translatable("chat." + ClassicPipes.MOD_ID + ".missing_item.b",
+                                        missingStack.getCount(), missingStack.getItemName())
+                                .withStyle(ChatFormatting.YELLOW));
                     }
                 }
             }
@@ -239,7 +273,8 @@ public class PipeNetwork {
                     for (ItemStack cacheStack : entry.getKey().getCache()) {
                         if (ItemStack.isSameItemSameComponents(cacheStack, withdrawStack)) {
                             int amountToExtract = Math.min(cacheStack.getCount(), withdrawStack.getCount());
-                            withdrawalSuccessful = entry.getKey().extractItem(level, cacheStack.copyWithCount(amountToExtract));
+                            withdrawalSuccessful = entry.getKey().extractItem(level,
+                                    cacheStack.copyWithCount(amountToExtract));
                             break;
                         }
                     }
@@ -249,7 +284,11 @@ public class PipeNetwork {
                             this.requestedItems.removeLast();
                         }
                         if (player != null) {
-                            player.sendSystemMessage(Component.translatable("chat." + ClassicPipes.MOD_ID + ".could_not_extract", stack.getCount(), stack.getItemName(), entry.getKey().getProviderPipePos().toShortString()).withStyle(ChatFormatting.RED));
+                            player.sendSystemMessage(Component
+                                    .translatable("chat." + ClassicPipes.MOD_ID + ".could_not_extract",
+                                            stack.getCount(), stack.getItemName(),
+                                            entry.getKey().getProviderPipePos().toShortString())
+                                    .withStyle(ChatFormatting.RED));
                         }
                         break;
                     }
@@ -261,10 +300,77 @@ public class PipeNetwork {
             if (success && player != null) {
                 player.awardStat(ClassicPipes.ITEMS_REQUESTED_STAT, stack.getCount());
                 ClassicPipes.REQUEST_ITEM_TRIGGER.trigger((ServerPlayer) player, stack, requestState.getUniqueCrafts());
-                player.sendSystemMessage(Component.translatable("chat." + ClassicPipes.MOD_ID + ".requested", stack.getCount(), stack.getItemName()).withStyle(ChatFormatting.GREEN));
+                player.sendSystemMessage(Component.translatable("chat." + ClassicPipes.MOD_ID + ".requested",
+                        stack.getCount(), stack.getItemName()).withStyle(ChatFormatting.GREEN));
+                player.sendSystemMessage(Component.literal("ETA: " + this.estimateEta(level, requestState, requestPos))
+                        .withStyle(ChatFormatting.GRAY));
                 DiscordRequestNotifier.notifyRequest(player, stack);
             }
         }
+    }
+
+    private String estimateEta(ServerLevel level, RequestState requestState, BlockPos requestPos) {
+        long longestTravelTicks = 0;
+        for (ProviderPipe provider : requestState.getItemsToWithdraw().keySet()) {
+            if (provider instanceof NetworkedPipeEntity source) {
+                int distance = this.shortestPipeDistance(level, source, requestPos);
+                long travelTicks = this.estimateTravelTicks((long) distance * ItemInPipe.PIPE_LENGTH,
+                        source.getTargetSpeed(), source.getAcceleration());
+                longestTravelTicks = Math.max(longestTravelTicks, travelTicks);
+            }
+        }
+
+        long seconds = Math.ceilDiv(longestTravelTicks, 20L);
+        long hours = seconds / 3600;
+        long minutes = seconds % 3600 / 60;
+        long remainingSeconds = seconds % 60;
+
+        return String.format(Locale.ROOT, "%02d:%02d:%02d", hours, minutes, remainingSeconds);
+    }
+
+    private long estimateTravelTicks(long distance, short targetSpeed, short acceleration) {
+        int speed = ItemInPipe.DEFAULT_SPEED;
+        long ticks = 0;
+        while (distance > 0) {
+            if (speed < targetSpeed) {
+                speed = Math.min(speed + acceleration, Math.min(targetSpeed, ItemInPipe.SPEED_LIMIT));
+            } else if (speed > targetSpeed) {
+                speed = Math.max(speed - acceleration, Math.max(targetSpeed, 1));
+            }
+            distance -= speed;
+            ticks++;
+        }
+        return ticks;
+    }
+
+    private int shortestPipeDistance(ServerLevel level, NetworkedPipeEntity source, BlockPos destinationPos) {
+        if (!(level.getBlockEntity(destinationPos) instanceof NetworkedPipeEntity destination)) {
+            return 0;
+        }
+
+        Map<NetworkedPipeEntity, Integer> distances = new HashMap<>();
+        PriorityQueue<NetworkedPipeEntity> openSet = new PriorityQueue<>(Comparator.comparingInt(distances::get));
+        distances.put(source, 0);
+        openSet.add(source);
+
+        while (!openSet.isEmpty()) {
+            NetworkedPipeEntity current = openSet.poll();
+            int currentDistance = distances.get(current);
+            if (current == destination) {
+                return currentDistance;
+            }
+            for (Tuple<BlockPos, Integer> connection : current.networkDistances.values()) {
+                if (level.getBlockEntity(connection.a()) instanceof NetworkedPipeEntity neighbour) {
+                    int newDistance = currentDistance + connection.b();
+                    if (newDistance < distances.getOrDefault(neighbour, Integer.MAX_VALUE)) {
+                        distances.put(neighbour, newDistance);
+                        openSet.remove(neighbour);
+                        openSet.add(neighbour);
+                    }
+                }
+            }
+        }
+        return 0;
     }
 
     public void tick(ServerLevel level) {
@@ -302,7 +408,8 @@ public class PipeNetwork {
             }
         }
         if (this.cacheChanged && this.cacheCooldown <= 0) {
-            List<ServerPlayer> playerList = level.getPlayers(player -> player.containerMenu instanceof RequestMenu menu && menu.getNetworkPos().equals(this.getPos()));
+            List<ServerPlayer> playerList = level.getPlayers(player -> player.containerMenu instanceof RequestMenu menu
+                    && menu.getNetworkPos().equals(this.getPos()));
             if (!playerList.isEmpty()) {
                 ClientBoundItemListPayload toSend = this.requestItemList(this.pos);
                 for (ServerPlayer player : playerList) {
@@ -319,7 +426,11 @@ public class PipeNetwork {
         }
         this.getRequestedItems().removeIf(requestedItem -> {
             if (requestedItem.timedOut()) {
-                requestedItem.sendMessage(level, Component.translatable("chat." + ClassicPipes.MOD_ID + ".timed_out", requestedItem.getAmountRemaining(), requestedItem.getStack().getItemName()).withStyle(ChatFormatting.RED));
+                requestedItem.sendMessage(level,
+                        Component
+                                .translatable("chat." + ClassicPipes.MOD_ID + ".timed_out",
+                                        requestedItem.getAmountRemaining(), requestedItem.getStack().getItemName())
+                                .withStyle(ChatFormatting.RED));
                 for (RecipePipeEntity craftingPipe : this.recipePipes) {
                     if (requestedItem.matches(craftingPipe.getResult(), true)) {
                         craftingPipe.dropHeldItems(level, craftingPipe.getBlockPos());
@@ -400,7 +511,10 @@ public class PipeNetwork {
         }
         this.requestedItems.removeIf(requestedItem -> {
             if (requestedItem.getDestination().equals(pipe.getBlockPos())) {
-                requestedItem.sendMessage(level, Component.translatable("chat." + ClassicPipes.MOD_ID + ".destination_removed", requestedItem.getAmountRemaining(), requestedItem.getStack().getItemName(), pipe.getBlockPos().toShortString()).withStyle(ChatFormatting.RED));
+                requestedItem.sendMessage(level,
+                        Component.translatable("chat." + ClassicPipes.MOD_ID + ".destination_removed",
+                                requestedItem.getAmountRemaining(), requestedItem.getStack().getItemName(),
+                                pipe.getBlockPos().toShortString()).withStyle(ChatFormatting.RED));
                 return true;
             }
             return false;
